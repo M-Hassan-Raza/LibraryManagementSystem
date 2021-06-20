@@ -1,0 +1,11 @@
+10
+01	Nelson Mandela	Political	Long Walk to Freedom
+02	Ron Chernow	Political	Alexander Hamilton
+03	David Halberstam	Political	The Best and the Brightest	
+04	Michael Lewis	Economics	The Big Short
+05	Peter Drucker Economics	Post-Capitalist Society
+06	Andrew Hunt	Programming	The Pragmatic Programmer
+07	Jon Bentley	Programming	Programming Pearls
+08	Effective Java	Programming	Joshua Bloch
+09	Roel Meijer	Religion	Global Salafism
+10	Steven Wasserstrom	Religion	Between Muslim and Jew
