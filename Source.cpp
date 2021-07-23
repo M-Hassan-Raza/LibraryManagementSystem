@@ -60,8 +60,9 @@ public:
 		String[i] = '\0';
 		return String;
 	}
-
+	
 };
+
 
 class Date
 {
@@ -176,7 +177,7 @@ public:
 		Output << SerialNumber << "\t" << NameOfAuthor << "\t" << TypeOfBook << "\t" << NameOfBook;
 	}
 
-	void CopyDataBetweenArrays(Book* &BookData) //To place data in variables of new array
+	void CopyDataBetweenArrays(Book*& BookData) //To place data in variables of new array
 	{
 		SerialNumber = BookData->SerialNumber;
 		NameOfAuthor = Helper::GetStringFromBuffer(BookData->NameOfAuthor);
@@ -210,7 +211,7 @@ public:
 
 	void PrintBook() //To print book on console
 	{
-		cout << SerialNumber << "\t" << NameOfAuthor << "\t\t" << TypeOfBook << "\t" << NameOfBook << endl;
+		cout << SerialNumber << "\t" << NameOfAuthor << "\t\t" << TypeOfBook << "\t" << NameOfBook;
 	}
 
 	void PrintBookInformation() //To print information regarding book on users demand
@@ -285,11 +286,14 @@ public:
 		userName = Helper::GetStringFromBuffer(obj->userName);
 	}
 
-	bool Sign_Up(Librarian&);
-
 	void SetUsername(char* username)
 	{
 		userName = username;
+	}
+
+	void SaveUserToFile(ofstream& Output) //To save book information in a file
+	{
+		Output << userName << "\t" << Password << "\t" << Name;
 	}
 
 	void ReadUserFromFile(ifstream& fin) //Reads user data from file
@@ -314,85 +318,9 @@ public:
 
 	void Request_For_Information(); //To acquire information about book
 
-	
+	bool Sign_Up(Librarian& LibObject, User* &userObj); // A new user is added into the list
 
-	bool Login() //Checks for correct Roll Number and Password
-	{
-		ifstream loginFile("UsersData.txt");
-
-		bool tryAgain = true;
-		int again;
-		int numberOfUsers, counter = 0;
-		char tempUserName[9];
-		char tempPass[20];
-		char tempCompleteName[50];
-		char** userNamesList;
-		char** passwordsList;
-		char** completeNamesList;
-		char passwordCharacter;
-		string tempUserPassword;
-
-		loginFile >> numberOfUsers;
-		userNamesList = new char* [numberOfUsers];
-		passwordsList = new char* [numberOfUsers];
-		completeNamesList = new char* [numberOfUsers];
-
-		for (int i = 0; i < numberOfUsers; i++)
-		{
-			userNamesList[i] = new char;
-			loginFile >> tempUserName;
-			tempUserName[8] = '\0';
-			userNamesList[i] = Helper::GetStringFromBuffer(tempUserName);
-
-			passwordsList[i] = new char;
-			loginFile >> tempPass;
-			tempPass[strlen(tempPass)] = '\0';
-			passwordsList[i] = Helper::GetStringFromBuffer(tempPass);
-
-			completeNamesList[i] = new char;
-			loginFile.getline(tempCompleteName, 50);
-			tempCompleteName[strlen(tempCompleteName)] = '\0';
-			completeNamesList[i] = Helper::GetStringFromBuffer(tempCompleteName);
-		}
-
-
-
-		do
-		{
-			again = 1;
-			cout << "\nEnter Username: ";
-			cin >> tempUserName;
-
-			cout << "Enter Password: ";
-			do
-			{
-				passwordCharacter = _getch();
-				if (passwordCharacter != 13)
-				{
-					tempPass[counter++] = passwordCharacter;
-					cout << '*';
-				}
-			} while (passwordCharacter != 13);
-
-			for (int i = 0; i < numberOfUsers; i++)
-			{
-				if ((strcmp(tempUserName, userNamesList[i]) == 0) && (strcmp(tempPass, passwordsList[i]) == 0))
-				{
-					cout << "\nLogin Successfull!!\n";
-					userName = Helper::GetStringFromBuffer(tempUserName);
-					Password = Helper::GetStringFromBuffer(tempPass);
-					tryAgain = false;
-					return true;
-				}
-			}
-			cout << "\nIncorrect Username or Password. 1. Try Again\t2. Exit\n\n";
-			cin >> again;
-			tryAgain = true;
-		} while (tryAgain == true && again == 1);
-
-
-		return false;
-	}
+	bool Login(Librarian& LibObject, User* &userObj); //Checks for correct Roll Number and Password
 
 	~User()
 	{
@@ -407,12 +335,11 @@ public:
 };
 
 
-
 class Librarian
 {
 private:
-	int ID_Number;        //For Login
-	int Password;		  //For Login
+	char* ID_Number;        //For Login
+	char* Password;		  //For Login
 
 	static int TotalBooks;
 	static int AvailableBooks;    //Count of books Not issued
@@ -429,10 +356,6 @@ public:
 		BooksList = 0;
 		Members = 0;
 		AvailableBooks = 0;
-
-		ifstream Input("Librarian Info.txt");
-		Input >> ID_Number;
-		Input >> Password;
 	}
 
 	void Add_Book() //To add a new book into the list
@@ -457,7 +380,7 @@ public:
 
 		cout << endl << endl;
 		cin.ignore(); //To ignore '\n' character
-		for (int k = i+1; k <= TotalBooks; k++)
+		for (int k = i + 1; k <= TotalBooks; k++)
 		{
 			tempBooksList[i] = new Book;
 			tempBooksList[i]->NewBook(k);
@@ -466,12 +389,12 @@ public:
 		}
 		cout << "\n\nBook(s) successfully added\n\n";
 		BooksList = tempBooksList;
-		tempBooksList = 0;	
+		tempBooksList = 0;
 	}
 
-	void Add_User(char* username, char* completeName, char* password)
+	void Add_User(char* username, char* completeName, char* password, User* &userObj)
 	{
-		User** tempUsersList = new User * [TotalMembers + 1];
+		User** tempUsersList = new User * [TotalMembers+1];
 
 		int i;
 		for (i = 0; i < TotalMembers; i++)
@@ -485,25 +408,26 @@ public:
 			delete Members[j];
 		}
 
-		cout << endl << endl;
+		cout << endl;
 		cin.ignore(); //To ignore '\n' character
 
-		tempUsersList[TotalMembers + 1] = new User;
-		tempUsersList[TotalMembers + 1]->SetName(completeName);
-		tempUsersList[TotalMembers + 1]->SetUsername(username);
-		tempUsersList[TotalMembers + 1]->SetPassword(password);
+		tempUsersList[TotalMembers] = new User;
+		tempUsersList[TotalMembers]->SetName(completeName);
+		tempUsersList[TotalMembers]->SetUsername(username);
+		tempUsersList[TotalMembers]->SetPassword(password);
 
-		cout << "\n\nMember successfully added\n\n";
+		userObj = tempUsersList[TotalMembers];
+
+		cout << "Member successfully added\n\n";
 		Members = tempUsersList;
-		tempUsersList = 0;	
+		tempUsersList = 0;
 		TotalMembers++;
 	}
-
 
 	void Remove_Book() //Removes a book from the list
 	{
 		int serialNumber;
-		cout << "\n\nEnter the Serial Number of the book you want to remove: ";		
+		cout << "\n\nEnter the Serial Number of the book you want to remove: ";
 		cin >> serialNumber;
 
 		int PreviousBookCount = TotalBooks;
@@ -628,6 +552,7 @@ public:
 		for (int i = 0; i < TotalBooks; i++)
 		{
 			BooksList[i]->PrintBook();
+			cout << endl;
 		}
 		cout << endl << endl;
 	}
@@ -644,7 +569,7 @@ public:
 
 		Input >> TotalBooks;
 		AvailableBooks = TotalBooks;
-		BooksList = new Book* [TotalBooks];
+		BooksList = new Book * [TotalBooks];
 
 		for (int i = 0; i < TotalBooks; i++)
 		{
@@ -681,9 +606,35 @@ public:
 		return true;
 	}
 
+	User** GetUsers()
+	{
+		return Members;
+	}
+
+	int GetTotalUsers()
+	{
+		return TotalMembers;
+	}
+
+	void SaveUsers()
+	{
+		ofstream Output("Users.txt");
+
+		Output << TotalMembers;
+		Output << endl;
+		for (int i = 0; i < TotalMembers; i++)
+		{
+			Members[i]->SaveUserToFile(Output);
+			if (i != TotalMembers - 1) //To avoid next line command for the last book
+				Output << endl;
+		}
+
+		Output.close();
+	}
+
 	void Save_File() //To save modified list back into the file
 	{
-		ofstream Output("Books Info.txt");
+		ofstream Output("Books.txt");
 
 		Output << TotalBooks;
 		Output << endl;
@@ -697,24 +648,63 @@ public:
 		Output.close();
 	}
 
-	void Login() //Log in for librarian
+	bool Login() //Log in for librarian
 	{
-		int ID, password;
-		cout << "Enter your ID Number: ";
-		cin >> ID;
-		while (ID != ID_Number)
+		ifstream loginFile("Librarian.txt");
+
+		if (!loginFile.is_open())
 		{
-			cout << "Wrong ID Number! Please enter again: ";
-			cin >> ID;
+			cout << "Error!   Users File could not be opened\n";
+			return false;
 		}
-		cout << "\n\nNow enter your password: ";
-		cin >> password;
-		while (password != Password)
+
+		bool tryAgain = true;
+		int again, counter = 0;
+		char tempFileID[6];
+		char tempFilePass[20];
+		char tempID[9];
+		char tempPass[20];
+		char passwordCharacter;
+		string tempUserPassword;
+
+
+		loginFile >> tempFileID >> tempFilePass;
+
+		ID_Number = Helper::GetStringFromBuffer(tempFileID);
+		Password = Helper::GetStringFromBuffer(tempFilePass);
+
+		do
 		{
-			cout << "Wrong Password! Please enter again: ";
-			cin >> password;
-		}
-		cout << "\n\nLogin was successful\n\n";
+			again = 1;
+			cout << "\nEnter Employee number: ";
+			cin >> tempID;
+
+			cout << "Enter Password: ";
+			do
+			{
+				passwordCharacter = _getch();
+				if (passwordCharacter != 13)
+				{
+					tempPass[counter++] = passwordCharacter;
+					cout << '*';
+				}
+			} while (passwordCharacter != 13);
+
+			tempPass[counter] = '\0';
+
+			if ((strcmp(tempID, ID_Number) == 0) && (strcmp(tempPass, Password) == 0))
+			{
+				cout << "\nLogin Successfull!!\n";
+				tryAgain = false;
+				return true;
+			}
+			cout << "\nIncorrect Username or Password. 1. Try Again\t2. Exit\n\n";
+			cin >> again;
+			tryAgain = true;
+		} while (tryAgain == true && again == 1);
+
+
+		return false;
 	}
 
 	static void Information_Regarding_Book(int serialNumber) //Privides information regarding book when a member requests
@@ -750,8 +740,127 @@ public:
 };
 
 
+bool User::Sign_Up(Librarian& LibObject, User* &userObj) // A new user is added into the list
+{
+	char tempName[9];
+	char tempPass[20];
+	char tempCompleteName[50];
+	char passwordCharacter = '0';
+	char duplicatePassword[20];
+	bool passwordsMatch = true;
+	bool userNameCorrectFormat = true;
+	int tryAgain;
+	int lengthOfName, counter = 0;
 
-void User:: Book_Return()
+	cout << "Enter you Complete Name: ";
+	cin.getline(tempCompleteName, 50, '\n');
+
+	do
+	{
+		tryAgain = 1;
+		cout << "Enter your userName (e.g 20L-1234): ";
+		cin >> tempName;
+		userNameCorrectFormat = true;
+
+		lengthOfName = strlen(tempName);
+		if (lengthOfName != 8)
+		{
+			userNameCorrectFormat = false;
+		}
+
+
+		if ((int(tempName[0]) < 48) || (int(tempName[0] > 57)))
+		{
+			userNameCorrectFormat = false;
+		}
+
+		if ((int(tempName[1]) < 48) || (int(tempName[1] > 57)))
+		{
+			userNameCorrectFormat = false;
+		}
+
+		if ((int(tempName[2]) < 65) || (int(tempName[3] > 90)))
+		{
+			userNameCorrectFormat = false;
+		}
+
+		if (tempName[3] != '-')
+		{
+			userNameCorrectFormat = false;
+		}
+
+		for (int i = 4; i < lengthOfName; i++)
+		{
+			if ((int(tempName[i]) < 48) || (int(tempName[i] > 57)))
+			{
+				userNameCorrectFormat = false;
+			}
+
+		}
+
+		if (userNameCorrectFormat == false)
+		{
+			cout << "\n\nUsername Incorrect Format. Please follow the correct naming scheme e.g. 20L-1361\n\n";
+		}
+	} while (userNameCorrectFormat == false);
+
+
+	do
+	{
+		cout << "Enter Password: ";
+		do
+		{
+			passwordCharacter = _getch();
+
+			if (passwordCharacter != 13)
+			{
+				tempPass[counter++] = passwordCharacter;
+				cout << '*';
+			}
+		} while (passwordCharacter != 13);
+
+		passwordCharacter = '0';
+		cout << strlen(tempPass) << endl;
+		tempPass[counter] = '\0';
+		counter = 0;
+
+		cout << "\nEnter Password AGAIN: ";
+		do
+		{
+			passwordCharacter = _getch();
+
+			if (passwordCharacter != 13)
+			{
+				duplicatePassword[counter++] = passwordCharacter;
+				cout << '*';
+			}
+		} while (passwordCharacter != 13);
+		duplicatePassword[counter] = '\0';
+
+		if ((strcmp(tempPass, duplicatePassword)) == 0)
+		{
+			cout << "\nUser account successfully created! You can start using the account to access the library.\n\n";
+			passwordsMatch = true;
+			char* userName = Helper::GetStringFromBuffer(tempName);
+			char* Password = Helper::GetStringFromBuffer(duplicatePassword);
+			char* Name = Helper::GetStringFromBuffer(tempCompleteName);
+			LibObject.Add_User(userName, Name, Password, userObj);
+			return true;
+		}
+		else
+		{
+			cout << "\nPasswords didn't match. User account could not be created!\n\n";
+			cout << "Would you like to try again?1. Yes 2. No\n";
+			cin >> tryAgain;
+			passwordsMatch = false;
+		}
+	} while (passwordsMatch == false && tryAgain == 1);
+
+	return false;
+}
+
+
+void User::Book_Return()
 {
 	if (book == 0)
 	{
@@ -767,7 +876,57 @@ void User:: Book_Return()
 		Return_Date.SetDate(); //Sets return date to 0/0/0
 		book = 0;
 	}
-		
+
+}
+
+
+bool User::Login(Librarian& LibObject, User* &userObj)
+{
+	bool tryAgain = true;
+	int again;
+	int counter = 0;
+	char tempUserName[9];
+	char tempPass[20];
+	char passwordCharacter;
+
+	User** Members = LibObject.GetUsers();
+	int TotalUsers = LibObject.GetTotalUsers();
+	
+	do
+	{
+		again = 1;
+		cout << "\nEnter Username: ";
+		cin >> tempUserName;
+
+		cout << "Enter Password: ";
+		do
+		{
+			passwordCharacter = _getch();
+			if (passwordCharacter != 13)
+			{
+				tempPass[counter++] = passwordCharacter;
+				cout << '*';
+			}
+		} while (passwordCharacter != 13);
+		tempPass[counter] = '\0';
+
+		for (int i = 0; i < TotalUsers; i++)
+		{
+			if ((strcmp(tempUserName, Members[i]->userName) == 0) && (strcmp(tempPass, Members[i]->Password) == 0))
+			{
+				cout << "\nLogin Successfull!!\n";
+				userObj = Members[i];
+				tryAgain = false;
+				return true;
+			}
+		}
+		cout << "\nIncorrect Username or Password. 1. Try Again\t2. Exit\n\n";
+		cin >> again;
+		tryAgain = true;
+	} while (tryAgain == true && again == 1);
+
+
+	return false;
 }
 
 
@@ -804,142 +963,29 @@ void User::Request_For_Issue()
 		return;
 }
 
+
 void User::Request_For_Information()
 {
 	cout << "\n\nEnter the serial number of the book you want to acquire information about: ";
 	int serialNumber;
 	cin >> serialNumber;
 	Librarian::Information_Regarding_Book(serialNumber);
-	if (serialNumber == book->GetSerialNumber())
-	{
-		cout << "Issue date of your book is: ";
-		Issue_Date.PrintDate();
-		cout << "Return date of your book is: ";
-		Return_Date.PrintDate();
 
-		cout << endl << endl;
+	if (book)
+	{
+		if (serialNumber == book->GetSerialNumber())
+		{
+			cout << "Issue date of your book is: ";
+			Issue_Date.PrintDate();
+			cout << "Return date of your book is: ";
+			Return_Date.PrintDate();
+
+			cout << endl << endl;
+		}
 	}
+
 }
 
-
-bool User::Sign_Up(Librarian& libObj) // A new user is added into the list
-	{
-		char tempName[9];
-		char tempPass[20];
-		char tempCompleteName[50];
-		char passwordCharacter = '0';
-		char duplicatePassword[20];
-		bool passwordsMatch = true;
-		bool userNameCorrectFormat = true;
-		int tryAgain;
-		int lengthOfName, counter = 0;
-
-		cout << "Enter you Complete Name: ";
-		cin >> tempCompleteName;
-
-		do
-		{
-			tryAgain = 1;
-			cout << "Enter your userName (e.g 20L-1234): ";
-			cin >> tempName;
-			userNameCorrectFormat = true;
-
-			lengthOfName = strlen(tempName);
-			if (lengthOfName != 8)
-			{
-				userNameCorrectFormat = false;
-			}
-
-
-			if ((int(tempName[0]) < 48) || (int(tempName[0] > 57)))
-			{
-				userNameCorrectFormat = false;
-			}
-
-			if ((int(tempName[1]) < 48) || (int(tempName[1] > 57)))
-			{
-				userNameCorrectFormat = false;
-			}
-
-			if ((int(tempName[2]) < 65) || (int(tempName[3] > 90)))
-			{
-				userNameCorrectFormat = false;
-			}
-
-			if (tempName[3] != '-')
-			{
-				userNameCorrectFormat = false;
-			}
-
-			for (int i = 4; i < lengthOfName; i++)
-			{
-				if ((int(tempName[i]) < 48) || (int(tempName[i] > 57)))
-				{
-					userNameCorrectFormat = false;
-				}
-
-			}
-
-			if (userNameCorrectFormat == false)
-			{
-				cout << "\n\nUsername Incorrect Format. Please follow the correct naming scheme e.g. 20L-1361\n\n";
-			}
-		} while (userNameCorrectFormat == false);
-
-
-		do
-		{
-			cout << "Enter Password: ";
-			do
-			{
-				passwordCharacter = _getch();
-
-				if (passwordCharacter != 13)
-				{
-					tempPass[counter++] = passwordCharacter;
-					cout << '*';
-				}
-			} while (passwordCharacter != 13);
-
-			passwordCharacter = '0';
-			cout << strlen(tempPass) << endl;
-			tempPass[counter + 1] = '\0';
-			counter = 0;
-
-			cout << "\nEnter Password AGAIN: ";
-			do
-			{
-				passwordCharacter = _getch();
-
-				if (passwordCharacter != 13)
-				{
-					duplicatePassword[counter++] = passwordCharacter;
-					cout << '*';
-				}
-			} while (passwordCharacter != 13);
-			duplicatePassword[counter + 1] = '\0';
-
-			if ((strcmp(tempPass, duplicatePassword)) == 0)
-			{
-				cout << "\nUser account successfully created! You can start using the account to access the library.\n\n";
-				passwordsMatch = true;
-				userName = Helper::GetStringFromBuffer(tempName);
-				Password = Helper::GetStringFromBuffer(duplicatePassword);
-				Name = Helper::GetStringFromBuffer(tempCompleteName);
-				libObj.Add_User(userName, Name, Password);
-				return true;
-			}
-			else
-			{
-				cout << "\nPasswords didn't match. User account could not be created!\n\n";
-				cout << "Would you like to try again?1. Yes 2. No\n";
-				cin >> tryAgain;
-				passwordsMatch = false;
-			}
-		} while (passwordsMatch == false && tryAgain == 1);
-
-		return false;
-	}
 
 Book** Librarian::BooksList = NULL;
 int Librarian::AvailableBooks = NULL;
@@ -965,114 +1011,124 @@ void main()
 	books = libObj.LoadBooks();
 	users = libObj.LoadUsers();
 
-	if(books == false)
+	if (books == false)
 	{
 		cout << "\nBooks loading failed, the program can't procede until the files are properly loaded.\n";
 		Sleep(5000);
 		return;
 	}
 
-	if(users == false)
+	if (users == false)
 	{
 		cout << "\nUsers loading failed, the program can't procede until the files are properly loaded.\n";
 		Sleep(5000);
 		return;
 	}
 
-
+	Label:
 	char choice;
+	cout << "\n\nChoose your designation:" << endl;
 	cout << "\t\t\t\t1. Librarian\t\t2. User\t\t3. Quit\n\n";
 	choice = _getch();
 
-	if(choice == '1')
+	if (choice == '1')
 	{
-		char libChoice;
-
-		do
+		bool permit = libObj.Login();
+		if (permit)
 		{
-			libObj.PrintAllBooks();
-			cout << "What would like to perform" << endl;
-			cout << "\n1. Login\n2. Add Book\n3. Remove Book\n4. Edit Book\n5. Back\n";
-			libChoice = _getch();
+			char libChoice = 0;
+			do
+			{
+				cout << endl << endl;
+				libObj.PrintAllBooks();
+				cout << "What would like to perform" << endl;
+				cout << "\n1. Add Book\n2. Remove Book\n3. Edit Book\n4. Back\n";
+				libChoice = _getch();
 
-			if(libChoice == '1')
-			{
-				libObj.Login();
-			}
-			else if(libChoice == '2')
-			{
-				libObj.Add_Book();
-				libObj.Save_File();
-			}
-			else if(libChoice == '3')
-			{
-				libObj.Remove_Book();
-				libObj.Save_File();
-			}
-			else if(libChoice == '4')
-			{
-				libObj.Edit_Book();
-				libObj.Save_File();
-			}
-			else if (libChoice != '5')
-			{
-				cout << "Wrong choice, please only choose from 1 to 5.\n";
-			}
+				if (libChoice == '1')
+				{
+					libObj.Add_Book();
+					libObj.Save_File();
+				}
+				else if (libChoice == '2')
+				{
+					libObj.Remove_Book();
+					libObj.Save_File();
+				}
+				else if (libChoice == '3')
+				{
+					libObj.Edit_Book();
+					libObj.Save_File();
+				}
+				else if (libChoice == '4')
+				{
+					goto Label;
+				}
+				else if (libChoice != '4')
+				{
+					cout << "Wrong choice, please only choose from 1 to 4.\n";
+				}
+			} while (libChoice != '4');
 		}
-		while(libChoice != '5');
+		else
+			goto Label;
 
 	}
 	else if (choice == '2')
 	{
-		libObj.PrintAllBooks();
 		char userChoice = '0';
-		User userObj;
-
-		do
+		User* UserObj = 0;
+		User* userObj = 0;
+		bool permit = false;
+		cout << "Login if you already have an accoiunt, Signup if you are a new user" << endl;
+		cout << "1. Signup\n2. Login" << endl;
+		userChoice = _getch();
+		if (userChoice == '1')
 		{
-			cout << "\n\nWhat would like to perform" << endl;
-			cout << "1. Signup\n2. Login\n3. Issue Book\n4. Return Book\n5. Request For Book Information\n6. Back\n";
-			userChoice = _getch();
-			if(userChoice == '1')
-			{
-				userObj.Sign_Up(libObj);
-			}
-			else if(userChoice == '2')
-			{
-				userLogin = userObj.Login();
-			}
-			else if(userChoice == '3')
-			{
-				if(userLogin == true)
-				{
-					userObj.Request_For_Issue();
-				}
-			
-			}
-			else if(userChoice == '4')
-			{
-				if(userLogin == true)
-				{
-					userObj.Book_Return();
-				}
-			}
-			else if (userChoice == '5')
-			{
-				if(userLogin == true)
-				{
-					userObj.Request_For_Information();
-				}
-				
-			}
-			else if (userChoice != '6')
-			{
-				cout << "Wrong choice, please only choose from 1 to 6.\n";
-			}
+			permit = UserObj->Sign_Up(libObj, userObj);
+			libObj.SaveUsers();
 		}
-		while(userChoice != '6');
+		else if (userChoice == '2')
+		{
+			permit = UserObj->Login(libObj, userObj);
+		}
 
+		if (permit)
+		{
+			libObj.PrintAllBooks();
+			do
+			{
+				cout << "\n\nWhat would like to perform" << endl;
+				cout << "1. Issue Book\n2. Return Book\n3. Request For Book Information\n4. Back\n";
+				userChoice = _getch();
+
+				if (userChoice == '1')
+				{
+					userObj->Request_For_Issue();
+				}
+				else if (userChoice == '2')
+				{
+					userObj->Book_Return();
+				}
+				else if (userChoice == '3')
+				{
+					userObj->Request_For_Information();
+				}
+				else if (userChoice == '4')
+				{
+					goto Label;
+				}
+				else if (userChoice != '4')
+				{
+					cout << "Wrong choice, please only choose from 1 to 4.\n";
+				}
+			} while (userChoice != '4');
+		}
+		else
+			goto Label;
 	}
-	else if(choice == '3')
+
+	else if (choice == '3')
 	{
 		cout << "\n\nQuitting program in 3 seconds.......\n";
 		Sleep(3000);
@@ -1086,3 +1142,6 @@ void main()
 
 	system("pause>0");
 }
+
+
+
